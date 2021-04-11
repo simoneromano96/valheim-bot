@@ -19,7 +19,7 @@ const main = async () => {
   await client.login(config.apiToken);
 
   client.on('ready', async () => {
-    console.log(`Logged in as ${client.user.tag}!`)
+    console.log(`Logged in as ${client?.user?.tag}!`)
   })
 
   client.on('message', msg => {
@@ -28,7 +28,7 @@ const main = async () => {
     }
   })
 
-  const valheimChannel = await client.channels.fetch(config.channelId) as TextChannel
+  const valheimChannel = await client.channels.fetch(config?.channelId || "") as TextChannel
 
   // Fastify HTTP Server
   const app = fastify({

@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/simoneromano96/valheim-bot#readme",
   "devDependencies": {
+    "@types/node": "^14.14.37",
     "@typescript-eslint/eslint-plugin": "^4.21.0",
     "@typescript-eslint/parser": "^4.21.0",
     "eslint": "^7.24.0",
