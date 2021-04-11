@@ -30,6 +30,7 @@
     "typescript": "^4.2.4"
   },
   "dependencies": {
-    "discord.js": "^12.5.3"
+    "discord.js": "^12.5.3",
+    "fastify": "^3.14.2"
   }
 }
