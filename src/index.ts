@@ -1,5 +1,7 @@
 import { Client } from 'discord.js';
 
+import { config } from './config';
+
 const client = new Client();
 
 client.on('ready', () => {
@@ -12,4 +14,4 @@ client.on('message', msg => {
   }
 });
 
-client.login('token');
+client.login(config.apiToken);
