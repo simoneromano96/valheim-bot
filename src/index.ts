@@ -1,9 +1,20 @@
+import { fastify, FastifyReply, FastifyRequest } from "fastify";
+import fastifyAuth from "fastify-auth";
+import fastifyBasicAuth from "fastify-basic-auth";
+
 import { Client, TextChannel } from 'discord.js';
-import { fastify } from "fastify";
 
 import { config } from './config';
 
+const validate = async (username: string, password: string, req: FastifyRequest, res: FastifyReply) => {
+  if (username !== config.basicAuth.username && password !== config.basicAuth.password) {
+    res.status(401)
+    res.send("You're gay!")
+  }
+}
+
 const main = async () => {
+  // Discord Client
   const client = new Client();
   await client.login(config.apiToken);
 
@@ -19,8 +30,16 @@ const main = async () => {
 
   const valheimChannel = await client.channels.fetch(config.channelId) as TextChannel
 
+  // Fastify HTTP Server
   const app = fastify({
     logger: true,
+  })
+
+  app.register(fastifyAuth)
+  app.register(fastifyBasicAuth, { authenticate: { realm: config.basicAuth.realm }, validate })
+
+  app.after(() => {
+    app.addHook("preHandler", app.auth([app.basicAuth]))
   })
 
   // Add basic auth
