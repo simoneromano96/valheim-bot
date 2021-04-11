@@ -1,0 +1,20 @@
+{
+  "name": "valheim-bot",
+  "version": "0.0.0",
+  "description": "A simple valheim bot test",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simoneromano96/valheim-bot.git"
+  },
+  "author": "Simone Romano [simoneromano@tutanota.de], Ayrton []",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/simoneromano96/valheim-bot/issues"
+  },
+  "homepage": "https://github.com/simoneromano96/valheim-bot#readme"
+}
