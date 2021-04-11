@@ -17,7 +17,7 @@ const main = async () => {
     }
   })
 
-  const valheimChannel = await client.channels.fetch("830821489178705960") as TextChannel
+  const valheimChannel = await client.channels.fetch(config.channelId) as TextChannel
 
   const app = fastify({
     logger: true,
@@ -49,7 +49,7 @@ const main = async () => {
     res.send("ok")
   })
 
-  await app.listen(9000)
+  await app.listen(config.port, "0.0.0.0")
 }
 
 main()
