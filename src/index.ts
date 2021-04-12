@@ -49,22 +49,35 @@ const main = async () => {
     app.addHook("preHandler", app.auth([app.basicAuth]))
   })
 
-  // Add basic auth
-  app.get("/server/start", async (req, res) => {
+  // START
+  app.get("/server/pre-start", async (req, res) => {
+    await valheimChannel.send("Server is starting! You will be able to play soon")
+    res.send("ok")
+  })
+
+  app.get("/server/post-start", async (req, res) => {
     await valheimChannel.send("Server is up! You can start playing ;)")
     res.send("ok")
   })
 
-  app.get("/server/shutdown", async (req, res) => {
-    await valheimChannel.send("Server is down! GTFO")
+  // SHUTDOWN
+  app.get("/server/pre-shutdown", async (req, res) => {
+    await valheimChannel.send("Server is shutting down! GTFO")
     res.send("ok")
   })
 
+  app.get("/server/post-shutdown", async (req, res) => {
+    await valheimChannel.send("Server is shut down!")
+    res.send("ok")
+  })
+
+  // RESTART
   app.get("/server/restart", async (req, res) => {
     await valheimChannel.send("Server is restarting! Wait for the supercomputer to launch the game")
     res.send("ok")
   })
 
+  // BACKUP
   app.get("/backup/start", async (req, res) => {
     await valheimChannel.send("Server is doing a backup! Slowdown incoming! D:")
     res.send("ok")
