@@ -23,8 +23,15 @@ const main = async () => {
   })
 
   client.on('message', msg => {
-    if (msg.content === 'ping') {
-      msg.reply('pong')
+    switch (msg.content.toLocaleLowerCase()) {
+      case "!server":
+        msg.reply(config.publicIP)
+        break;
+      case "ping":
+        msg.reply('pong')
+        break
+      default:
+        break
     }
   })
 
