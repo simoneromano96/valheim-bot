@@ -72,8 +72,13 @@ const main = async () => {
   })
 
   // RESTART
-  app.get("/server/restart", async (req, res) => {
+  app.get("/server/pre-restart", async (req, res) => {
     await valheimChannel.send("Server is restarting! Wait for the supercomputer to launch the game")
+    res.send("ok")
+  })
+
+  app.get("/server/post-restart", async (req, res) => {
+    await valheimChannel.send("Server is back up and running. Enjoy!")
     res.send("ok")
   })
 
