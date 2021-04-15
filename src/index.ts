@@ -1,6 +1,7 @@
 import { fastify, FastifyReply, FastifyRequest } from "fastify";
 import fastifyAuth from "fastify-auth";
 import fastifyBasicAuth from "fastify-basic-auth";
+import Docker from "dockerode";
 
 import { Client, TextChannel } from 'discord.js';
 
@@ -22,20 +23,47 @@ const main = async () => {
     console.log(`Logged in as ${client?.user?.tag}!`)
   })
 
-  client.on('message', msg => {
+  const valheimChannel = await client.channels.fetch(config?.channelId || "") as TextChannel
+
+  await valheimChannel.send("Bot is up and running!")
+
+  // Docker instance
+  const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
+
+  const services = await dockerClient.listContainers({ filters: {"ancestor": ["lloesche/valheim-server"]} });
+
+  if (services.length < 1) {
+    await valheimChannel.send("Could not find server container!")
+    throw new Error("Could not find server container!")
+  }
+
+  await valheimChannel.send(`Found ${services.length} valheim servers`)
+
+  const valheimServerContainerId = services[0].Id
+
+  const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
+
+  client.on('message', async (msg) => {
     switch (msg.content.toLocaleLowerCase()) {
       case "!server":
-        msg.reply(config.publicIP)
+        await msg.reply(config.publicIP)
         break;
+      case "!restart":
+        const hasRolePermission = msg.member?.roles.cache.get("500058631002259476")
+        if (hasRolePermission) {
+          await msg.reply("Launching a restart")
+          await valheimServerContainer.restart()
+        } else {
+          await msg.reply("Your pp is too small!")
+        }
+        break
       case "ping":
-        msg.reply('pong')
+        await msg.reply('pong')
         break
       default:
         break
     }
   })
-
-  const valheimChannel = await client.channels.fetch(config?.channelId || "") as TextChannel
 
   // Fastify HTTP Server
   const app = fastify({
