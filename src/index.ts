@@ -54,11 +54,11 @@ const main = async () => {
           await msg.reply("ACK, launching a restart")
           await valheimServerContainer.restart()
         } else {
-          await msg.reply("Your pp is too small! And I've seen many since I am a bot in the interwebs")
+          await msg.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
         }
         break
       case "ping":
-        await msg.reply('What did you expect? `Pong` mayb`? Are you gonna shit yourself now? Maybe piss and cry? BeepBoop motherfucker')
+        await msg.reply('What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker')
         break
       default:
         break
