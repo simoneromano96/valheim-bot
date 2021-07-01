@@ -8,5 +8,6 @@ export const config = {
     username: process.env.APP_BASIC_AUTH_USERNAME || "username",
     password: process.env.APP_BASIC_AUTH_PASSWORD || "password",
     realm: process.env.APP_BASIC_AUTH_REALM || "heaven",
-  }
+  },
+  nexus: { apiToken: process.env.APP_BOT_NEXUS_TOKEN, valheimId: "3667" },
 }

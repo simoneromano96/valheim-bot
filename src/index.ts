@@ -2,6 +2,11 @@ import { fastify, FastifyReply, FastifyRequest } from "fastify";
 import fastifyAuth from "fastify-auth";
 import fastifyBasicAuth from "fastify-basic-auth";
 import Docker from "dockerode";
+import bullmq from "bullmq"
+import { join } from 'path'
+import  lowdb from 'lowdb'
+import Nexus from "@nexusmods/nexus-api";
+
 
 import { Client, TextChannel } from 'discord.js';
 
@@ -14,7 +19,38 @@ const validate = async (username: string, password: string, req: FastifyRequest,
   }
 }
 
+type Data = {
+  mods: any[] // Expect posts to be an array of strings
+}
+
 const main = async () => {
+
+  // Use JSON file for storage
+  const file = join(__dirname, 'db.json')
+  const adapter = new lowdb.JSONFile<Data>('db.json')
+  const db = new lowdb.Low<Data>(adapter)
+
+  // Read data from JSON file, this will set db.data content
+  await db.read()
+
+  // If file.json doesn't exist, db.data will be null
+  // Set default data
+  db.data ||= { mods: [] }    
+
+  console.log(db.data.mods)
+  
+  
+  const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId )
+  const modInfo = await nexusClient.getModInfo(db.data.mods[0], config.nexus.valheimId) 
+  console.log(modInfo)
+  
+   
+  /* const games = await nexusClient.getGames()
+  console.log(games.find(game => game.name.toLowerCase() === "valheim"))
+  const valheimInfo = await nexusClient.getGameInfo("3667")
+  console.log(valheimInfo) */
+  return 
+
   // Discord Client
   const client = new Client();
   await client.login(config.apiToken);
