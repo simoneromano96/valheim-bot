@@ -3,9 +3,9 @@ import fastifyAuth from "fastify-auth";
 import fastifyBasicAuth from "fastify-basic-auth";
 import Docker from "dockerode";
 import bullmq from "bullmq"
+import level from 'level';
 import { join } from 'path'
-import  lowdb from 'lowdb'
-import Nexus from "@nexusmods/nexus-api";
+import Nexus, { IModInfo } from "@nexusmods/nexus-api";
 
 
 import { Client, TextChannel } from 'discord.js';
@@ -20,12 +20,17 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 }
 
 type Data = {
-  mods: any[] // Expect posts to be an array of strings
+  mods: IModInfo[]
 }
+
+
 
 const main = async () => {
 
-  // Use JSON file for storage
+  //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
+  const db = level('my-db', {valueEncoding: "json"})
+
+ /*  // Use JSON file for storage
   const file = join(__dirname, 'db.json')
   const adapter = new lowdb.JSONFile<Data>('db.json')
   const db = new lowdb.Low<Data>(adapter)
@@ -37,19 +42,16 @@ const main = async () => {
   // Set default data
   db.data ||= { mods: [] }    
 
-  console.log(db.data.mods)
-  
+  console.log(db.data.mods) */
   
   const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId )
-  const modInfo = await nexusClient.getModInfo(db.data.mods[0], config.nexus.valheimId) 
-  console.log(modInfo)
+  /* const modInfo = await nexusClient.getModInfo(parsedMod[0].mod_id, config.nexus.valheimId) 
+  console.log(modInfo) */
   
-   
   /* const games = await nexusClient.getGames()
   console.log(games.find(game => game.name.toLowerCase() === "valheim"))
   const valheimInfo = await nexusClient.getGameInfo("3667")
   console.log(valheimInfo) */
-  return 
 
   // Discord Client
   const client = new Client();
@@ -68,14 +70,14 @@ const main = async () => {
 
   const services = await dockerClient.listContainers({ filters: {"ancestor": ["lloesche/valheim-server"]} });
 
-  if (services.length < 1) {
+  /* if (services.length < 1) {
     await valheimChannel.send("Could not find server container!")
     throw new Error("Could not find server container!")
-  }
+  } */
 
   await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
 
-  const valheimServerContainerId = services[0].Id
+  const valheimServerContainerId = services[0]?.Id
 
   const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
@@ -157,6 +159,21 @@ const main = async () => {
     res.send("ok")
   })
 
+  app.get("/mods/add/:id", async (req, res) => {
+    const mods:Partial<IModInfo>[] = await db.get("mods") ?? []
+    //dobbiamo validare le request
+    const id:string = (req.params as any).id 
+    mods.push({mod_id: parseInt(id)})
+    await db.put("mods", mods)
+    res.send("Ok")
+  })
+
+  app.get("/mods", async (req, res) => {
+    const mods:Partial<IModInfo>[] = await db.get("mods") ?? []
+    //dobbiamo validare le request
+    res.send(mods)
+  })
+  
   await app.listen(config.port, "0.0.0.0")
 }
 
