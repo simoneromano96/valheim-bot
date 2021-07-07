@@ -1,10 +1,14 @@
 import { fastify, FastifyReply, FastifyRequest } from "fastify";
 import fastifyAuth from "fastify-auth";
 import fastifyBasicAuth from "fastify-basic-auth";
+import fastifySwagger from "fastify-swagger";
+
+import { Static, Type } from '@sinclair/typebox'
 import Docker from "dockerode";
 import bullmq from "bullmq"
 import level from 'level';
 import { join } from 'path'
+
 import Nexus, { IModInfo } from "@nexusmods/nexus-api";
 
 
@@ -19,11 +23,9 @@ const validate = async (username: string, password: string, req: FastifyRequest,
   }
 }
 
-type Data = {
-  mods: IModInfo[]
-}
-
-
+// type Data = {
+//   mods: IModInfo[]
+// }
 
 const main = async () => {
 
@@ -110,6 +112,16 @@ const main = async () => {
 
   app.register(fastifyAuth)
   app.register(fastifyBasicAuth, { authenticate: { realm: config.basicAuth.realm }, validate })
+  app.register(fastifySwagger, {
+    openapi: {
+      info: {
+        title: "Valheim bot",
+        description: "A valheim and nexud mods utility",
+        version: '0.1.0',
+      }
+    },
+    exposeRoute: true,
+  })
 
   app.after(() => {
     app.addHook("preHandler", app.auth([app.basicAuth]))
@@ -159,17 +171,27 @@ const main = async () => {
     res.send("ok")
   })
 
-  app.get("/mods/add/:id", async (req, res) => {
-    const mods:Partial<IModInfo>[] = await db.get("mods") ?? []
-    //dobbiamo validare le request
-    const id:string = (req.params as any).id 
-    mods.push({mod_id: parseInt(id)})
+  const ObserveMod = Type.Object({
+    id: Type.Number(),
+  });
+
+  type ObserveModType = Static<typeof ObserveMod>;
+
+  app.post<{Body: ObserveModType}>("/mods", {
+    schema: {
+      summary: 'Observe a mod',
+      description: "Adds a mod to the observed mods list",
+      body: ObserveMod,
+    }
+  }, async (req, res) => {
+    const mods: Partial<IModInfo>[] = await db.get("mods") ?? []
+    mods.push({ mod_id: req.body.id })
     await db.put("mods", mods)
-    res.send("Ok")
+    res.send("ok")
   })
 
   app.get("/mods", async (req, res) => {
-    const mods:Partial<IModInfo>[] = await db.get("mods") ?? []
+    const mods: Partial<IModInfo>[] = await db.get("mods") ?? []
     //dobbiamo validare le request
     res.send(mods)
   })
