@@ -1,21 +1,18 @@
-import { fastify, FastifyReply, FastifyRequest } from "fastify";
-import fastifyAuth from "fastify-auth";
-import fastifyBasicAuth from "fastify-basic-auth";
-import fastifySwagger from "fastify-swagger";
+import { fastify, FastifyReply, FastifyRequest } from "fastify"
+import fastifyAuth from "fastify-auth"
+import fastifyBasicAuth from "fastify-basic-auth"
+import fastifySwagger from "fastify-swagger"
 
-import { Static, Type } from '@sinclair/typebox'
-import Docker from "dockerode";
-import { Queue, Worker, QueueScheduler } from 'bullmq';
-import level from 'level';
-import { join } from 'path'
+import { Static, Type } from "@sinclair/typebox"
+import Docker from "dockerode"
+import { Queue, Worker, QueueScheduler } from "bullmq"
+import level from "level"
 
-import Nexus, { IModInfo } from "@nexusmods/nexus-api";
+import Nexus, { IModInfo } from "@nexusmods/nexus-api"
 
+import { Client, TextChannel } from "discord.js"
 
-import { Client, DMChannel, TextChannel } from 'discord.js';
-
-import { config } from './config';
-import { REPL_MODE_STRICT } from "repl";
+import { config } from "./config"
 
 const validate = async (username: string, password: string, req: FastifyRequest, res: FastifyReply) => {
   if (username !== config.basicAuth.username && password !== config.basicAuth.password) {
@@ -25,61 +22,57 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 }
 
 // type Data = {
-  //   mods: IModInfo[]
-  // }
-  
-  const main = async () => {
-  
+//   mods: IModInfo[]
+// }
 
-    //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
-    const db = level('my-db', {valueEncoding: "json"})
+const main = async () => {
+  //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
+  const db = level("my-db", { valueEncoding: "json" })
 
-    try {
-      await db.get("modsToFetch")
-    } catch (error) {
-      await db.put("modsToFetch", [])
+  try {
+    await db.get("modsToFetch")
+  } catch (error) {
+    await db.put("modsToFetch", [])
+  }
+
+  //inizializzo il client nexus
+  const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId)
+
+  const myQueueScheduler = new QueueScheduler("Paint")
+  const myQueue = new Queue("Paint")
+
+  // Repeat job every 10 seconds but no more than 100 times
+  await myQueue.add("bird", null, {
+    repeat: {
+      every: 1000 * 60,
+    },
+  })
+
+  const worker = new Worker(myQueue.name, async (job) => {
+    //recuperare mod attuali, vedere quali da aggiornare, chiamare la get info per quelle da aggiornare e salvare nel database
+    const updateMods = []
+    const mods: Partial<IModInfo>[] = (await db.get("modsToFetch")) ?? []
+    for (let index = 0; index < mods.length; index++) {
+      const element = mods[index]
+      const modInfo = await nexusClient.getModInfo(element.mod_id!, config.nexus.valheimId)
+      updateMods.push(modInfo)
     }
-
-    //inizializzo il client nexus
-    const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId )
-    
-    const myQueueScheduler = new QueueScheduler('Paint');
-    const myQueue = new Queue('Paint');
-    
-    // Repeat job every 10 seconds but no more than 100 times
-    await myQueue.add('bird', null , 
-    {
-      repeat: {
-        every: 1000*60
-      }
-    });
-    
-    const worker = new Worker(myQueue.name, async job => {
-      //recuperare mod attuali, vedere quali da aggiornare, chiamare la get info per quelle da aggiornare e salvare nel database
-      const updateMods = []
-      const mods: Partial<IModInfo>[] = await db.get("modsToFetch") ?? []
-      for (let index = 0; index < mods.length; index++) {
-        const element = mods[index];
-        const modInfo = await nexusClient.getModInfo(element.mod_id!, config.nexus.valheimId) 
-        updateMods.push(modInfo)
-      }
-      await db.put("updateMods", updateMods)
-  });
+    await db.put("updateMods", updateMods)
+  })
 
   //fare delete per togliere dalla modsToFetch una mod, capire come prender ele info che abbiamo sul db della mod X e vedere se c'è una differenza per notificarla
   //fare i comandi per il bot(che siano autocompletabili da discord), scaricare la mod e servirla da un server di file statici
   //fare comando !get per prendere il link dal server e POSTARE tipo NOMEMOD: LINK.
 
-  worker.on('completed', (job) => {
-    console.log(`${job.id} has completed!`);
-  });
+  worker.on("completed", (job) => {
+    console.log(`${job.id} has completed!`)
+  })
 
-  worker.on('failed', (job:any, err:any) => {
-      console.log(`${job.id} has failed with ${err.message}`);
-  });
+  worker.on("failed", (job: any, err: any) => {
+    console.log(`${job.id} has failed with ${err.message}`)
+  })
 
-
- /*  // Use JSON file for storage
+  /*  // Use JSON file for storage
   const file = join(__dirname, 'db.json')
   const adapter = new lowdb.JSONFile<Data>('db.json')
   const db = new lowdb.Low<Data>(adapter)
@@ -92,29 +85,28 @@ const validate = async (username: string, password: string, req: FastifyRequest,
   db.data ||= { mods: [] }    
 
   console.log(db.data.mods) */
-  
-  
+
   /* const games = await nexusClient.getGames()
   console.log(games.find(game => game.name.toLowerCase() === "valheim"))
   const valheimInfo = await nexusClient.getGameInfo("3667")
   console.log(valheimInfo) */
 
   // Discord Client
-  const client = new Client();
-  await client.login(config.apiToken);
+  const client = new Client()
+  await client.login(config.apiToken)
 
-  client.on('ready', async () => {
+  client.on("ready", async () => {
     console.log(`Logged in as ${client?.user?.tag}!`)
   })
 
-  const valheimChannel = await client.channels.fetch(config?.channelId || "") as TextChannel
+  const valheimChannel = (await client.channels.fetch(config?.channelId || "")) as TextChannel
 
   await valheimChannel.send("Beep Boop, bot is up and running!")
 
   // Docker instance
   const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
 
-  const services = await dockerClient.listContainers({ filters: {"ancestor": ["lloesche/valheim-server"]} });
+  const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
 
   /* if (services.length < 1) {
     await valheimChannel.send("Could not find server container!")
@@ -127,11 +119,11 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 
   const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
-  client.on('message', async (msg) => {
+  client.on("message", async (msg) => {
     switch (msg.content.toLocaleLowerCase()) {
       case "!server":
         await msg.reply(config.publicIP)
-        break;
+        break
       case "!restart":
         const hasRolePermission = msg.member?.roles.cache.get("500058631002259476")
         if (hasRolePermission) {
@@ -142,7 +134,9 @@ const validate = async (username: string, password: string, req: FastifyRequest,
         }
         break
       case "ping":
-        await msg.reply('What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker')
+        await msg.reply(
+          "What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker",
+        )
         break
       default:
         break
@@ -157,13 +151,13 @@ const validate = async (username: string, password: string, req: FastifyRequest,
   app.register(fastifyAuth)
   app.register(fastifyBasicAuth, { authenticate: { realm: config.basicAuth.realm }, validate })
   app.register(fastifySwagger, {
-    routePrefix: '/docs',
+    routePrefix: "/docs",
     openapi: {
       info: {
         title: "Valheim bot",
         description: "A valheim and nexud mods utility",
-        version: '0.1.0',
-      }
+        version: "0.1.0",
+      },
     },
     exposeRoute: true,
   })
@@ -218,31 +212,33 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 
   const ObserveMod = Type.Object({
     id: Type.Number(),
-  });
-
-  type ObserveModType = Static<typeof ObserveMod>;
-
-  app.post<{Body: ObserveModType}>("/mods", {
-    schema: {
-      summary: 'Observe a mod',
-      description: "Adds a mod to the observed mods list",
-      body: ObserveMod,
-    }
-  }, async (req, res) => {
-    const mods: Partial<IModInfo>[] = await db.get("modsToFetch") ?? []
-    mods.push({ mod_id: req.body.id })
-    await db.put("modsToFetch", mods)
-    res.send("ok")
   })
 
+  type ObserveModType = Static<typeof ObserveMod>
 
+  app.post<{ Body: ObserveModType }>(
+    "/mods",
+    {
+      schema: {
+        summary: "Observe a mod",
+        description: "Adds a mod to the observed mods list",
+        body: ObserveMod,
+      },
+    },
+    async (req, res) => {
+      const mods: Partial<IModInfo>[] = (await db.get("modsToFetch")) ?? []
+      mods.push({ mod_id: req.body.id })
+      await db.put("modsToFetch", mods)
+      res.send("ok")
+    },
+  )
 
   app.get("/mods", async (req, res) => {
-    const mods: Partial<IModInfo>[] = await db.get("updateMods") ?? []
+    const mods: Partial<IModInfo>[] = (await db.get("updateMods")) ?? []
     //dobbiamo validare le request
     res.send(mods)
   })
-  
+
   await app.listen(config.port, "0.0.0.0")
 }
 
