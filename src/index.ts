@@ -5,7 +5,7 @@ import fastifySwagger from "fastify-swagger";
 
 import { Static, Type } from '@sinclair/typebox'
 import Docker from "dockerode";
-import bullmq from "bullmq"
+import { Queue, Worker, QueueScheduler } from 'bullmq';
 import level from 'level';
 import { join } from 'path'
 
@@ -31,6 +31,38 @@ const main = async () => {
 
   //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
   const db = level('my-db', {valueEncoding: "json"})
+  
+  const myQueueScheduler = new QueueScheduler('Paint');
+  const myQueue = new Queue('Paint');
+
+  // Repeat job every 10 seconds but no more than 100 times
+  await myQueue.add('bird', null , 
+    {
+      repeat: {
+        every: 1,
+        limit: 100
+      }
+    });
+
+  const worker = new Worker(myQueue.name, async job => {
+      //recuperare mod attuali, vedere quali da aggiornare, chiamare la get info per quelle da aggiornare e salvare nel database
+      const mods: Partial<IModInfo>[] = await db.get("modsToFetch") ?? []
+      
+    console.log(job.data);
+  });
+
+  worker.on('completed', (job) => {
+    console.log(`${job.id} has completed!`);
+  });
+
+  worker.on('failed', (job, err) => {
+      console.log(`${job.id} has failed with ${err.message}`);
+  });
+
+  await myQueueScheduler.close()
+
+  return;
+
 
  /*  // Use JSON file for storage
   const file = join(__dirname, 'db.json')
@@ -184,11 +216,13 @@ const main = async () => {
       body: ObserveMod,
     }
   }, async (req, res) => {
-    const mods: Partial<IModInfo>[] = await db.get("mods") ?? []
+    const mods: Partial<IModInfo>[] = await db.get("modsToFetch") ?? []
     mods.push({ mod_id: req.body.id })
-    await db.put("mods", mods)
+    await db.put("modsToFetch", mods)
     res.send("ok")
   })
+
+
 
   app.get("/mods", async (req, res) => {
     const mods: Partial<IModInfo>[] = await db.get("mods") ?? []
