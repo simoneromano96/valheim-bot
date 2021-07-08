@@ -113,6 +113,7 @@ const main = async () => {
   app.register(fastifyAuth)
   app.register(fastifyBasicAuth, { authenticate: { realm: config.basicAuth.realm }, validate })
   app.register(fastifySwagger, {
+    routePrefix: '/docs',
     openapi: {
       info: {
         title: "Valheim bot",
