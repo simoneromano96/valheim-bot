@@ -12,9 +12,10 @@ import { join } from 'path'
 import Nexus, { IModInfo } from "@nexusmods/nexus-api";
 
 
-import { Client, TextChannel } from 'discord.js';
+import { Client, DMChannel, TextChannel } from 'discord.js';
 
 import { config } from './config';
+import { REPL_MODE_STRICT } from "repl";
 
 const validate = async (username: string, password: string, req: FastifyRequest, res: FastifyReply) => {
   if (username !== config.basicAuth.username && password !== config.basicAuth.password) {
@@ -24,44 +25,58 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 }
 
 // type Data = {
-//   mods: IModInfo[]
-// }
-
-const main = async () => {
-
-  //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
-  const db = level('my-db', {valueEncoding: "json"})
+  //   mods: IModInfo[]
+  // }
   
-  const myQueueScheduler = new QueueScheduler('Paint');
-  const myQueue = new Queue('Paint');
+  const main = async () => {
+  
 
-  // Repeat job every 10 seconds but no more than 100 times
-  await myQueue.add('bird', null , 
+    //valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
+    const db = level('my-db', {valueEncoding: "json"})
+
+    try {
+      await db.get("modsToFetch")
+    } catch (error) {
+      await db.put("modsToFetch", [])
+    }
+
+    //inizializzo il client nexus
+    const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId )
+    
+    const myQueueScheduler = new QueueScheduler('Paint');
+    const myQueue = new Queue('Paint');
+    
+    // Repeat job every 10 seconds but no more than 100 times
+    await myQueue.add('bird', null , 
     {
       repeat: {
-        every: 1,
-        limit: 100
+        every: 1000*60
       }
     });
-
-  const worker = new Worker(myQueue.name, async job => {
+    
+    const worker = new Worker(myQueue.name, async job => {
       //recuperare mod attuali, vedere quali da aggiornare, chiamare la get info per quelle da aggiornare e salvare nel database
+      const updateMods = []
       const mods: Partial<IModInfo>[] = await db.get("modsToFetch") ?? []
-      
-    console.log(job.data);
+      for (let index = 0; index < mods.length; index++) {
+        const element = mods[index];
+        const modInfo = await nexusClient.getModInfo(element.mod_id!, config.nexus.valheimId) 
+        updateMods.push(modInfo)
+      }
+      await db.put("updateMods", updateMods)
   });
+
+  //fare delete per togliere dalla modsToFetch una mod, capire come prender ele info che abbiamo sul db della mod X e vedere se c'è una differenza per notificarla
+  //fare i comandi per il bot(che siano autocompletabili da discord), scaricare la mod e servirla da un server di file statici
+  //fare comando !get per prendere il link dal server e POSTARE tipo NOMEMOD: LINK.
 
   worker.on('completed', (job) => {
     console.log(`${job.id} has completed!`);
   });
 
-  worker.on('failed', (job, err) => {
+  worker.on('failed', (job:any, err:any) => {
       console.log(`${job.id} has failed with ${err.message}`);
   });
-
-  await myQueueScheduler.close()
-
-  return;
 
 
  /*  // Use JSON file for storage
@@ -78,9 +93,6 @@ const main = async () => {
 
   console.log(db.data.mods) */
   
-  const nexusClient = await Nexus.create(config.nexus.apiToken!, "Valheim", "0.0.0", config.nexus.valheimId )
-  /* const modInfo = await nexusClient.getModInfo(parsedMod[0].mod_id, config.nexus.valheimId) 
-  console.log(modInfo) */
   
   /* const games = await nexusClient.getGames()
   console.log(games.find(game => game.name.toLowerCase() === "valheim"))
@@ -226,7 +238,7 @@ const main = async () => {
 
 
   app.get("/mods", async (req, res) => {
-    const mods: Partial<IModInfo>[] = await db.get("mods") ?? []
+    const mods: Partial<IModInfo>[] = await db.get("updateMods") ?? []
     //dobbiamo validare le request
     res.send(mods)
   })
