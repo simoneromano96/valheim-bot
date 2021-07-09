@@ -108,3 +108,4 @@ docker-compose.yml
 .vscode/
 
 my-db/
+valheim-bot-db/

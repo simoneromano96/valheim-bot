@@ -1,13 +1,20 @@
 export const config = {
-  apiToken: process.env.APP_BOT_TOKEN,
-  channelId: process.env.APP_CHANNEL_ID,
+  discord: {
+    apiToken: process.env.APP_DISCORD_API_TOKEN || "",
+    channelId: process.env.APP_DISCORD_CHANNEL_ID || "",
+    enabled: process.env.APP_DISCORD_ENABLED === "true",
+    restartRolePermissionID: process.env.APP_DISCORD_RESTART_ROLE_PERMISSION_ID || "none",
+  },
   port: process.env.APP_PORT || "8080",
   publicIP: process.env.APP_PUBLIC_IP || "localhost",
-  restartRolePermissionID: process.env.APP_RESTART_ROLE_PERMISSION_ID || "none",
   basicAuth: {
     username: process.env.APP_BASIC_AUTH_USERNAME || "username",
     password: process.env.APP_BASIC_AUTH_PASSWORD || "password",
     realm: process.env.APP_BASIC_AUTH_REALM || "heaven",
   },
-  nexus: { apiToken: process.env.APP_BOT_NEXUS_TOKEN, valheimId: "3667" },
+  nexus: {
+    apiToken: process.env.APP_NEXUS_API_TOKEN || "",
+    enabled: process.env.APP_NEXUS_ENABLED === "true",
+    valheimId: "3667",
+  },
 }
