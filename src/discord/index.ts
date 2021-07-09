@@ -1,19 +1,21 @@
 import { FastifyPluginCallback, FastifySchema } from "fastify"
 import Docker from "dockerode"
 import { Client as DiscordClient, TextChannel } from "discord.js"
+import chalk from "chalk"
 
 import { config } from "../config"
 
+export const discordClient = new DiscordClient()
+
 export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done): Promise<void> => {
   // Discord Client
-  const client = new DiscordClient()
-  await client.login(config.discord.apiToken)
+  await discordClient.login(config.discord.apiToken)
 
-  client.on("ready", () => {
-    console.log(`Logged in as ${client?.user?.tag}!`)
+  discordClient.on("ready", () => {
+    console.log(chalk.green(`Logged in as ${discordClient?.user?.tag}!`))
   })
 
-  const valheimChannel = (await client.channels.fetch(config.discord.channelId)) as TextChannel
+  const valheimChannel = (await discordClient.channels.fetch(config.discord.channelId)) as TextChannel
 
   await valheimChannel.send("Beep Boop, bot is up and running!")
 
@@ -33,7 +35,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
 
   const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
-  client.on("message", async (msg) => {
+  discordClient.on("message", async (msg) => {
     switch (msg.content.toLocaleLowerCase()) {
       case "!server":
         await msg.reply(config.publicIP)

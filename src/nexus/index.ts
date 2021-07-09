@@ -1,17 +1,18 @@
 import nexusApi, { IModInfo } from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
-import { FastifyInstance, FastifySchema } from "fastify"
+import chalk from "chalk"
+import { FastifyPluginCallback, FastifySchema } from "fastify"
 
 import { config } from "../config"
 import { valheimBotDb } from "../db"
-import { DBKeys, IObservedMod, IObserveMod, ObservedMod, ObservedModList, ObserveMod } from "../types"
+import { DBKeys, IObservedMod, IObserveMod, ObservedModList, ObserveMod } from "../types"
 
 const { nexus } = config
 
 /**
  * Initializes all APIs for nexus
  */
-export const initNexusAPI = async (app: FastifyInstance): Promise<void> => {
+export const initNexusAPI: FastifyPluginCallback = async (app, options, done) => {
   //inizializzo il client nexus
   const nexusClient = await nexusApi.create(nexus.apiToken, "Valheim", "0.0.0", nexus.valheimId)
 
@@ -40,11 +41,11 @@ export const initNexusAPI = async (app: FastifyInstance): Promise<void> => {
   //fare comando !get per prendere il link dal server e POSTARE tipo NOMEMOD: LINK.
 
   worker.on("completed", (job) => {
-    console.log(`${job.id} has completed!`)
+    console.log(chalk.green(`${job.id} has completed!`))
   })
 
   worker.on("failed", (job: Job, err: Error) => {
-    console.log(`${job.id} has failed with ${err.message}`)
+    console.log(chalk.red(`${job.id} has failed with ${err.message}`))
   })
 
   const addModToObservedModsSchema = {
@@ -87,4 +88,6 @@ export const initNexusAPI = async (app: FastifyInstance): Promise<void> => {
     const mods: IModInfo[] = (await valheimBotDb.get(DBKeys.MOD_INFO_LIST)) ?? []
     res.send(mods)
   })
+
+  done()
 }

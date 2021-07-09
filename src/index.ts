@@ -3,6 +3,8 @@ import fastifyAuth from "fastify-auth"
 import fastifyBasicAuth from "fastify-basic-auth"
 import fastifySwagger from "fastify-swagger"
 
+import chalk from "chalk"
+
 import { config } from "./config"
 import { initLevelDB } from "./db"
 import { initNexusAPI } from "./nexus"
@@ -16,7 +18,7 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 }
 
 const main = async () => {
-  console.log("Initializing Valheim Bot")
+  console.log(chalk.yellow("Initializing Valheim Bot"))
 
   // Fastify HTTP Server
   const app = fastify({
@@ -42,21 +44,21 @@ const main = async () => {
   })
 
   if (config.discord.enabled) {
-    console.log("Initializing discord")
+    console.log(chalk.yellow("Initializing discord"))
     await app.register(initDiscordAPI, { prefix: "/discord" })
-    console.log("Initialized discord")
+    console.log(chalk.green("Initialized discord"))
   }
 
   if (config.nexus.enabled) {
-    console.log("Initializing nexus")
+    console.log(chalk.yellow("Initializing nexus"))
     await initLevelDB()
     await app.register(initNexusAPI, { prefix: "/nexus" })
-    console.log("Initialized nexus")
+    console.log(chalk.green("Initialized nexus"))
   }
 
   await app.listen(config.port, "0.0.0.0")
 
-  console.log("Valheim Bot initialized!")
+  console.log(chalk.green("Valheim Bot initialized!"))
 }
 
 main().catch((e) => console.error(e))
