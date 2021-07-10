@@ -2,7 +2,6 @@ import { fastify, FastifyReply, FastifyRequest } from "fastify"
 import fastifyAuth from "fastify-auth"
 import fastifyBasicAuth from "fastify-basic-auth"
 import fastifySwagger from "fastify-swagger"
-
 import chalk from "chalk"
 
 import { config } from "./config"
@@ -61,4 +60,4 @@ const main = async () => {
   console.log(chalk.green("Valheim Bot initialized!"))
 }
 
-main().catch((e) => console.error(e))
+main().catch(console.error)

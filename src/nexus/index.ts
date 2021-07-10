@@ -5,7 +5,7 @@ import { FastifyPluginCallback, FastifySchema } from "fastify"
 
 import { config } from "../config"
 import { valheimBotDb } from "../db"
-import { DBKeys, IObservedMod, IObserveMod, ObservedModList, ObserveMod } from "../types"
+import { DBKeys, IObservedMod, IObserveMod, ModInfoList, ObservedModList, ObserveMod } from "../types"
 
 const { nexus } = config
 
@@ -76,12 +76,12 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   const getModInfoListSchema: FastifySchema = {
     summary: "Gets evaluated mods",
     description: "Gets all mods that have been evaluated",
-    // response: {
-    //   200: {
-    //     description: "Succesful response",
-    //     ...ObservedModList,
-    //   },
-    // },
+    response: {
+      200: {
+        description: "Succesful response",
+        ...ModInfoList,
+      },
+    },
   }
 
   app.get("/mods", { schema: getModInfoListSchema }, async (req, res) => {
