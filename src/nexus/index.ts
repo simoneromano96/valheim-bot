@@ -4,7 +4,7 @@ import chalk from "chalk"
 import { FastifyPluginCallback, FastifySchema } from "fastify"
 
 import { config } from "../config"
-import { valheimBotDb } from "../db"
+import { valheimBotDB } from "../db"
 import { DBKeys, IObservedMod, IObserveMod, ModInfoList, ObservedModList, ObserveMod } from "../types"
 
 const { nexus } = config
@@ -28,12 +28,12 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
 
   const worker = new Worker(processModsQueue.name, async () => {
     // 1. Get currently observed mod list
-    const mods: IObservedMod[] = (await valheimBotDb.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
+    const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
     // 2 Fetch the mod info list
     const modInfoListPromises = mods.map(({ mod_id: modId }) => nexusClient.getModInfo(modId, nexus.valheimId))
     const modInfoList = await Promise.all(modInfoListPromises)
     // 3. Save in the db
-    await valheimBotDb.put(DBKeys.MOD_INFO_LIST, modInfoList)
+    await valheimBotDB.put(DBKeys.MOD_INFO_LIST, modInfoList)
   })
 
   //fare delete per togliere dalla modsToFetch una mod, capire come prender ele info che abbiamo sul db della mod X e vedere se c'è una differenza per notificarla
@@ -66,9 +66,9 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
       schema: addModToObservedModsSchema,
     },
     async (req, res) => {
-      const mods: IObservedMod[] = (await valheimBotDb.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
+      const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
       mods.push({ mod_id: req.body.id })
-      await valheimBotDb.put(DBKeys.OBSERVED_MOD_LIST, mods)
+      await valheimBotDB.put(DBKeys.OBSERVED_MOD_LIST, mods)
       res.status(201).send(mods)
     },
   )
@@ -85,7 +85,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   }
 
   app.get("/mods", { schema: getModInfoListSchema }, async (req, res) => {
-    const mods: IModInfo[] = (await valheimBotDb.get(DBKeys.MOD_INFO_LIST)) ?? []
+    const mods: IModInfo[] = (await valheimBotDB.get(DBKeys.MOD_INFO_LIST)) ?? []
     res.send(mods)
   })
 
