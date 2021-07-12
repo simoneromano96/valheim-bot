@@ -2,6 +2,6 @@
 
 ## TODOs
 
+- [ ] Add git hook for lint
+- [ ] Add CI
 - [ ] Player Login/Logout (?)
-- [ ] Server start/shutdown/restart
-- [ ] Backup start/end
