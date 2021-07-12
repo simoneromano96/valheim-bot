@@ -22,7 +22,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   await processModsQueue.add("evaluateModListJob", null, {
     repeat: {
       // 1000ms -> 60s -> 60m -> 1h
-      every: 1000 * 60 * 60,
+      every: 1000,
     },
   })
 
@@ -36,7 +36,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     await valheimBotDB.put(DBKeys.MOD_INFO_LIST, modInfoList)
   })
 
-  //fare delete per togliere dalla modsToFetch una mod, capire come prender ele info che abbiamo sul db della mod X e vedere se c'è una differenza per notificarla
+  // capire come prendere le info che abbiamo sul db della mod X e vedere se c'è una differenza per notificarla
   //fare i comandi per il bot(che siano autocompletabili da discord), scaricare la mod e servirla da un server di file statici
   //fare comando !get per prendere il link dal server e POSTARE tipo NOMEMOD: LINK.
 
@@ -87,6 +87,19 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   app.get("/mods", { schema: getModInfoListSchema }, async (req, res) => {
     const mods: IModInfo[] = (await valheimBotDB.get(DBKeys.MOD_INFO_LIST)) ?? []
     res.send(mods)
+  })
+
+  app.get<{ Params: IObserveMod }>("/mods/:id", async (req, res) => {
+    const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
+    const filteredMods = mods.filter((removedMod) => req.params.id === removedMod.mod_id)
+    res.send(filteredMods)
+  })
+
+  app.delete<{ Params: IObserveMod }>("/mods/:id", async (req, res) => {
+    const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
+    const filteredMods = mods.filter((removedMod) => req.params.id !== removedMod.mod_id)
+    await valheimBotDB.put(DBKeys.OBSERVED_MOD_LIST, filteredMods)
+    res.send(filteredMods)
   })
 
   done()
