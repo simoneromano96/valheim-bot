@@ -89,13 +89,33 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     res.send(mods)
   })
 
-  app.get<{ Params: IObserveMod }>("/mods/:id", async (req, res) => {
+  app.get<{ Params: IObserveMod }>("/mods/:id", schema: {
+    summary: "Gets an observed mod",
+    description: "Gets an observed mod by id",
+    params: ObserveMod,
+    response: {
+      200: {
+        description: "Succesful response",
+        ...ObservedModList,
+      },
+    },
+  }, async (req, res) => {
     const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
     const filteredMods = mods.filter((removedMod) => req.params.id === removedMod.mod_id)
     res.send(filteredMods)
   })
 
-  app.delete<{ Params: IObserveMod }>("/mods/:id", async (req, res) => {
+  app.delete<{ Params: IObserveMod }>("/mods/:id", schema: {
+    summary: "Delete an observed mod",
+    description: "Delete an observed mod by id",
+    params: ObserveMod,
+    response: {
+      200: {
+        description: "Succesful response",
+        ...ObservedModList,
+      },
+    },
+  },async (req, res) => {
     const mods: IObservedMod[] = (await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)) ?? []
     const filteredMods = mods.filter((removedMod) => req.params.id !== removedMod.mod_id)
     await valheimBotDB.put(DBKeys.OBSERVED_MOD_LIST, filteredMods)
