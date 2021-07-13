@@ -1,39 +1,83 @@
 import { FastifyPluginCallback, FastifySchema } from "fastify"
-import Docker from "dockerode"
 import { Client as DiscordClient, TextChannel } from "discord.js"
 import chalk from "chalk"
 
 import { config } from "../config"
 
-export const discordClient = new DiscordClient()
+export const discordClient = new DiscordClient({
+  intents: [
+    "GUILDS",
+    "GUILD_BANS",
+    "GUILD_EMOJIS",
+    "GUILD_INTEGRATIONS",
+    "GUILD_WEBHOOKS",
+    "GUILD_INVITES",
+    "GUILD_VOICE_STATES",
+    "GUILD_MESSAGES",
+    "GUILD_MESSAGE_REACTIONS",
+    "GUILD_MESSAGE_TYPING",
+    "DIRECT_MESSAGES",
+    "DIRECT_MESSAGE_REACTIONS",
+    "DIRECT_MESSAGE_TYPING",
+  ],
+})
 
-export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done): Promise<void> => {
-  // Discord Client
-  await discordClient.login(config.discord.apiToken)
-
-  discordClient.on("ready", () => {
-    console.log(chalk.green(`Logged in as ${discordClient?.user?.tag}!`))
+const initDiscordClient = () =>
+  new Promise<void>((resolve, reject) => {
+    discordClient
+      .login(config.discord.apiToken)
+      .then(() => {
+        // Wait for 10s before rejecting
+        const timeoutRef = setTimeout(reject, 10000)
+        discordClient.on("ready", () => {
+          console.log(chalk.green(`Logged in as ${discordClient?.user?.tag}!`))
+          clearTimeout(timeoutRef)
+          resolve()
+        })
+      })
+      .catch(reject)
   })
 
+export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done): Promise<void> => {
+  // Discord Client initialization
+  await initDiscordClient()
+
+  //@ts-ignore
   const valheimChannel = (await discordClient.channels.fetch(config.discord.channelId)) as TextChannel
 
   await valheimChannel.send("Beep Boop, bot is up and running!")
 
   // Docker instance
-  const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
+  // const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
 
-  const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
+  // const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
 
-  if (services.length < 1) {
-    await valheimChannel.send("Could not find server container!")
-    // throw new Error("Could not find server container!")
+  // if (services.length < 1) {
+  //   await valheimChannel.send("Could not find server container!")
+  //   // throw new Error("Could not find server container!")
+  // }
+
+  // await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
+
+  // const valheimServerContainerId = services[0]?.Id
+
+  // const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
+
+  // console.log(await discordClient.api)
+
+  //@ts-ignore
+  const guild = await discordClient.guilds.fetch(config.discord.guildId)
+
+  const commandsManager = guild.commands
+
+  const commands = await commandsManager.fetch()
+  console.log(commands)
+
+  try {
+    await commandsManager.create({ name: "test1", description: "Just a test" })
+  } catch (error) {
+    console.error(error)
   }
-
-  await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
-
-  const valheimServerContainerId = services[0]?.Id
-
-  const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
   discordClient.on("message", async (msg) => {
     switch (msg.content.toLocaleLowerCase()) {
@@ -44,7 +88,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
         const hasRolePermission = msg.member?.roles.cache.get("500058631002259476")
         if (hasRolePermission) {
           await msg.reply("ACK, launching a restart")
-          await valheimServerContainer.restart()
+          // await valheimServerContainer.restart()
         } else {
           await msg.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
         }

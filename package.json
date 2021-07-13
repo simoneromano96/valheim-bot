@@ -45,7 +45,7 @@
     "@nexusmods/nexus-api": "^1.1.3",
     "bullmq": "^1.38.1",
     "chalk": "^4.1.1",
-    "discord.js": "^12.5.3",
+    "discord.js": "^13.0.0-dev.1dcad05.1626178061",
     "dockerode": "^3.3.0",
     "fastify": "^3.19.1",
     "fastify-auth": "^1.1.0",

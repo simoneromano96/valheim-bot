@@ -2,6 +2,7 @@ export const config = {
   discord: {
     apiToken: process.env.APP_DISCORD_API_TOKEN || "",
     channelId: process.env.APP_DISCORD_CHANNEL_ID || "",
+    guildId: process.env.APP_DISCORD_GUILD_ID || "",
     enabled: process.env.APP_DISCORD_ENABLED === "true",
     restartRolePermissionID: process.env.APP_DISCORD_RESTART_ROLE_PERMISSION_ID || "none",
   },

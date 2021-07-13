@@ -55,6 +55,19 @@ const main = async () => {
     console.log(chalk.green("Initialized nexus"))
   }
 
+  app.post("/", async (req, res) => {
+    const response = {
+      type: 4,
+      data: {
+        tts: false,
+        content: "Congrats on sending your command!",
+        embeds: [],
+        allowed_mentions: { parse: [] },
+      },
+    }
+    res.send(response)
+  })
+
   await app.listen(config.port, "0.0.0.0")
 
   console.log(chalk.green("Valheim Bot initialized!"))
