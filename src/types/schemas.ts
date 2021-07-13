@@ -32,6 +32,7 @@ enum ModStatus {
   WASTEBINNED = "wastebinned",
   HIDDEN = "hidden",
 }
+
 enum EndorsedStatus {
   UNDECIDED = "Undecided",
   ABSTAINED = "Abstained",
@@ -44,9 +45,9 @@ export const ModInfo = Type.Object({
   domain_name: Type.String(),
   category_id: Type.Number(),
   contains_adult_content: Type.Boolean(),
-  name: Type.String(),
-  summary: Type.String(),
-  description: Type.String(),
+  name: Type.Optional(Type.String()),
+  summary: Type.Optional(Type.String()),
+  description: Type.Optional(Type.String()),
   version: Type.String(),
   author: Type.String(),
   user: User,
