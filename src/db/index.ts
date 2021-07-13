@@ -1,6 +1,6 @@
 import level from "level"
 
-import { DBKeys, IModInfoList, IObservedMod, IObservedModList } from "../types"
+import { DBKeys, IModInfo, IModInfoList, IObservedMod, IObservedModList } from "../types"
 
 // valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
 export const valheimBotDB = level("valheim-bot-db", { valueEncoding: "json" })
@@ -53,6 +53,16 @@ export const getObservedModById = async (modId: number): Promise<IObservedMod | 
  */
 export const getModInfoList = (): Promise<IModInfoList> => {
   return valheimBotDB.get(DBKeys.MOD_INFO_LIST)
+}
+
+/**
+ * Gets a specific mod info
+ * @param modId The mod id to find
+ * @returns The mod or undefined if not present
+ */
+export const getModInfoById = async (modId: number): Promise<IModInfo | undefined> => {
+  const mods = await getModInfoList()
+  return mods.find((mod) => mod.mod_id === modId)
 }
 
 /**

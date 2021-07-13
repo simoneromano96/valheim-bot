@@ -1,11 +1,11 @@
 import nexusApi from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 import chalk from "chalk"
-import { FastifyPluginCallback, FastifySchema } from "fastify"
+import { FastifyPluginCallback } from "fastify"
 
 import { config } from "../config"
-import { getModInfoList, getObservedModById, getObservedModList, putModInfoList, valheimBotDB } from "../db"
-import { DBKeys, IModInfo, IModInfoList, IObservedMod, IObserveMod, ModInfoList, ObservedModList, ObserveMod } from "../types"
+import { getModInfoById, getModInfoList, getObservedModById, getObservedModList, putModInfoList } from "../db"
+import { IModInfoList, IObserveMod, ModInfoList, ObservedModList, ObserveMod } from "../types"
 import { observeMod, stopObserveMod } from "./api"
 
 const { nexus } = config
@@ -90,6 +90,24 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   app.get("/mods/info", { schema: getModInfoListSchema }, async (req, res) => {
     const mods = await getModInfoList()
     res.send(mods)
+  })
+
+  const getModInfoSchema = {
+    summary: "Get evaluated mod",
+    description: "Gets a mod that have been evaluated by id",
+    params: ObserveMod,
+    response: {
+      200: {
+        description: "Succesful response",
+        ...ModInfoList,
+      },
+    },
+  }
+
+  app.get<{ Params: IObserveMod }>("/mods/info/:id", { schema: getModInfoSchema }, async (req, res) => {
+    const modId = req.params.id
+    const mod = await getModInfoById(modId)
+    res.send(mod)
   })
 
   const getObservedModSchema = {
