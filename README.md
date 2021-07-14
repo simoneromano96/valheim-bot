@@ -2,6 +2,10 @@
 
 ## TODOs
 
-- [ ] Add git hook for lint
+- [x] Add git hook for lint
 - [ ] Add CI
 - [ ] Player Login/Logout (?)
+- [ ] More Logging
+- [ ] Gateway Discord
+- [ ] !get
+- [ ] Refactor Nexus

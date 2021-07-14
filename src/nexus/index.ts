@@ -39,11 +39,11 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     const modInfoList = (await Promise.all(modInfoListPromises)) as IModInfoList
     const prevModInfoList = await getModInfoList()
     // 3. Check for differences
-    for (const modInfo of modInfoList) {
+    for (let modInfo of modInfoList) {
       // Get saved mod info
       const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
       // Check if timestamps are different. If true = aggiornamento.
-      if (modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
+      if (true || modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
         console.log(chalk.green("A mod has been updated!"))
         // Get mod Files
         const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
@@ -76,6 +76,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
         // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
         const fileName = `${modInfo.game_id}-${modInfo.mod_id}${extension}`
         await stream.promises.pipeline(got.stream(CDNURL.URI), fs.createWriteStream(path.join(path.resolve(config.static.path), fileName)))
+        modInfo = { ...modInfo, downloadURL: `http://localhost:8080/${config.static.path}/${fileName}` }
       }
     }
     // 4. Save in the db
