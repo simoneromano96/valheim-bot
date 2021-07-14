@@ -17,4 +17,11 @@ export const config = {
     enabled: process.env.APP_NEXUS_ENABLED === "true",
     valheimId: "3667",
   },
+  db: {
+    path: process.env.APP_DB_PATH || "../",
+    name: process.env.APP_DB_NAME || "valheim-bot-db-dev",
+  },
+  static: {
+    path: process.env.APP_STATIC_PATH || "static",
+  },
 }

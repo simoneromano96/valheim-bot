@@ -62,6 +62,7 @@ export const ModInfo = Type.Object({
   updated_time: Type.String(),
   allow_rating: Type.Boolean(),
   endorsement_count: Type.Number(),
+  downloadURL: Type.Optional(Type.String()),
   endorsement: Type.Object({
     endorse_status: Type.Enum(EndorsedStatus),
     timestamp: Type.Number(),

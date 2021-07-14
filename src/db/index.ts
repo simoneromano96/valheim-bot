@@ -1,9 +1,11 @@
 import level from "level"
+import { join } from "path"
+import { config } from "../config"
 
 import { DBKeys, IModInfo, IModInfoList, IObservedMod, IObservedModList } from "../types"
 
 // valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
-export const valheimBotDB = level("valheim-bot-db", { valueEncoding: "json" })
+export const valheimBotDB = level(join(__dirname, config.db.path, config.db.name), { valueEncoding: "json" })
 
 ///* Initialization
 export const initLevelDB = async (): Promise<void> => {

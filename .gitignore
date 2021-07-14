@@ -107,5 +107,6 @@ docker-compose.yml
 
 .vscode/
 
-my-db/
+static/*
 valheim-bot-db/
+valheim-bot-db-dev/

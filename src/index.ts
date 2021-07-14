@@ -2,7 +2,10 @@ import { fastify, FastifyReply, FastifyRequest } from "fastify"
 import fastifyAuth from "fastify-auth"
 import fastifyBasicAuth from "fastify-basic-auth"
 import fastifySwagger from "fastify-swagger"
+import fastifyStatic from "fastify-static"
 import chalk from "chalk"
+import path from "path"
+import fs from "fs"
 
 import { config } from "./config"
 import { initLevelDB } from "./db"
@@ -18,6 +21,11 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 
 const main = async () => {
   console.log(chalk.yellow("Initializing Valheim Bot"))
+  try {
+    await fs.promises.access(path.resolve(config.static.path), fs.constants.W_OK)
+  } catch (error) {
+    await fs.promises.mkdir(path.resolve(config.static.path))
+  }
 
   // Fastify HTTP Server
   const app = fastify({
@@ -36,6 +44,11 @@ const main = async () => {
       },
     },
     exposeRoute: true,
+  })
+
+  app.register(fastifyStatic, {
+    root: path.resolve(config.static.path),
+    prefix: "/static/", // optional: default '/'
   })
 
   app.after(() => {
