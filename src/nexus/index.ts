@@ -54,7 +54,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     body: ObserveMod,
     response: {
       201: {
-        description: "Succesful response",
+        description: "Successful response",
         ...ObservedModList,
       },
     },
@@ -78,7 +78,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     description: "Gets all mods that have been evaluated",
     response: {
       200: {
-        description: "Succesful response",
+        description: "Successful response",
         ...ModInfoList,
       },
     },
@@ -98,7 +98,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
         params: ObserveMod,
         response: {
           200: {
-            description: "Succesful response",
+            description: "Successful response",
             ...ObservedModList,
           },
         },
@@ -120,7 +120,7 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
         params: ObserveMod,
         response: {
           200: {
-            description: "Succesful response",
+            description: "Successful response",
             ...ObservedModList,
           },
         },
