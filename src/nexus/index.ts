@@ -1,16 +1,20 @@
+// Node modules
+import { promises as streamPromises } from "stream"
+import fs from "fs"
+import path from "path"
+
 import nexusApi from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 import chalk from "chalk"
 import { FastifyPluginCallback } from "fastify"
 import got from "got"
-import stream from "stream"
-import fs from "fs"
-import path from "path"
 
 import { config } from "../config"
 import { getModInfoById, getModInfoList, getObservedModById, getObservedModList, putModInfoList } from "../db"
 import { IModInfoList, IObserveMod, ModInfoList, ObservedModList, ObserveMod } from "../types"
 import { observeMod, stopObserveMod } from "./api"
+
+const pipeline = streamPromises.pipeline
 
 const { nexus } = config
 
@@ -25,26 +29,29 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
   const processModsQueue = new Queue("modsQueue")
 
   await processModsQueue.add("evaluateModListJob", null, {
+    delay: 0,
     repeat: {
       // 1000ms -> 60s -> 60m -> 1h
-      every: 1000 * 60,
+      every: 1000 * 60 * 60 * 1,
     },
   })
   //QUESTO È IL JOB LOL
-  const worker = new Worker(processModsQueue.name, async () => {
-    // 1. Get currently observed mod list
+  const worker = new Worker(processModsQueue.name, async (job) => {
+    console.log(chalk.yellow(`Started evaluateModListJob: ${job.id}`))
+    // Get currently observed mod list
     const observedModList = await getObservedModList()
-    // 2 Fetch the mod info list
+    // Fetch the mod info list
     const modInfoListPromises = observedModList.map(({ mod_id: modId }) => nexusClient.getModInfo(modId, nexus.valheimId))
     const modInfoList = (await Promise.all(modInfoListPromises)) as IModInfoList
+    // Get the current mod info list
     const prevModInfoList = await getModInfoList()
-    // 3. Check for differences
+    // Check for differences
     for (let modInfo of modInfoList) {
       // Get saved mod info
       const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
       // Check if timestamps are different. If true = aggiornamento.
-      if (true || modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
-        console.log(chalk.green("A mod has been updated!"))
+      if (modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
+        console.log(chalk.green(`The ${modInfo.name ?? modInfo.mod_id} mod has been updated!`))
         // Get mod Files
         const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
         let maxUploadedTimestamp = 0
@@ -60,7 +67,6 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
         if (!latestFileInfo) {
           throw new Error("No File present here :c")
         }
-
         // prendiamo i link per scaricare
         const downloadURLs = await nexusClient.getDownloadURLs(
           modInfo.mod_id,
@@ -70,13 +76,22 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
           modInfo.domain_name,
         )
         // prendo il primo url (CDN)
-        const CDNURL = downloadURLs[0]
-        //ne ottengo l'estensione
+        const cdnDownloadURI = downloadURLs[0].URI
+        // Get file extension
         const extension = path.extname(latestFileInfo.file_name)
-        // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
+        // Compose fileName (still unsure if this is ok)
         const fileName = `${modInfo.game_id}-${modInfo.mod_id}${extension}`
-        await stream.promises.pipeline(got.stream(CDNURL.URI), fs.createWriteStream(path.join(path.resolve(config.static.path), fileName)))
-        modInfo = { ...modInfo, downloadURL: `http://localhost:8080/${config.static.path}/${fileName}` }
+        // localFilePath
+        const localFilePath = path.join(path.resolve(config.static.path), fileName)
+        // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
+        await pipeline(got.stream(cdnDownloadURI), fs.createWriteStream(localFilePath, fileName))
+        const url = new URL(config.server.protocol)
+        url.hostname = config.server.hostname
+        url.port = config.server.port
+        url.pathname = path.join(config.static.path, fileName)
+        const downloadURL = url.toString()
+        // Reassign modInfo with the downloadURL
+        modInfo = { ...modInfo, downloadURL }
       }
     }
     // 4. Save in the db

@@ -1,4 +1,4 @@
-import { FastifyPluginCallback, FastifySchema } from "fastify"
+import { FastifyPluginCallback } from "fastify"
 import Docker from "dockerode"
 import { Client as DiscordClient, TextChannel } from "discord.js"
 import chalk from "chalk"
@@ -26,7 +26,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
 
   if (services.length < 1) {
     await valheimChannel.send("Could not find server container!")
-    // throw new Error("Could not find server container!")
+    throw new Error("Could not find server container!")
   }
 
   await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
@@ -38,7 +38,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
   discordClient.on("message", async (msg) => {
     switch (msg.content.toLocaleLowerCase()) {
       case "!server":
-        await msg.reply(config.publicIP)
+        await msg.reply(config.server.hostname)
         break
       case "!restart":
         const hasRolePermission = msg.member?.roles.cache.get("500058631002259476")
@@ -59,7 +59,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
     }
   })
 
-  const preStartSchema: FastifySchema = {
+  const preStartSchema = {
     summary: "Pre start",
     description: "Called when the valheim server is at pre-start",
     response: {

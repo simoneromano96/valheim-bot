@@ -9,3 +9,5 @@
 - [ ] Gateway Discord
 - [ ] !get
 - [ ] Refactor Nexus
+- [x] Add server domain
+- [ ] Add helmet

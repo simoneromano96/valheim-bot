@@ -1,11 +1,15 @@
+// Node native modules
+import path from "path"
+import fs from "fs"
+
+// Fastify
 import { fastify, FastifyReply, FastifyRequest } from "fastify"
 import fastifyAuth from "fastify-auth"
 import fastifyBasicAuth from "fastify-basic-auth"
 import fastifySwagger from "fastify-swagger"
 import fastifyStatic from "fastify-static"
+
 import chalk from "chalk"
-import path from "path"
-import fs from "fs"
 
 import { config } from "./config"
 import { initLevelDB } from "./db"
@@ -45,7 +49,6 @@ const main = async () => {
     },
     exposeRoute: true,
   })
-
   app.register(fastifyStatic, {
     root: path.resolve(config.static.path),
     prefix: "/static/", // optional: default '/'
@@ -68,7 +71,7 @@ const main = async () => {
     console.log(chalk.green("Initialized nexus"))
   }
 
-  await app.listen(config.port, "0.0.0.0")
+  await app.listen(config.server.port, "0.0.0.0")
 
   console.log(chalk.green("Valheim Bot initialized!"))
 }
