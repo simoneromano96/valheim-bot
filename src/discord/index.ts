@@ -1,9 +1,10 @@
 import { FastifyPluginCallback } from "fastify"
 import Docker from "dockerode"
 import { Client as DiscordClient, TextChannel } from "discord.js"
-import chalk from "chalk"
+import { Command, CommanderError } from "commander"
 
 import { config } from "../config"
+import { logger } from "../logger"
 
 export const discordClient = new DiscordClient()
 
@@ -12,7 +13,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
   await discordClient.login(config.discord.apiToken)
 
   discordClient.on("ready", () => {
-    console.log(chalk.green(`Logged in as ${discordClient?.user?.tag}!`))
+    logger.info(`Logged in as ${discordClient?.user?.tag}!`)
   })
 
   const valheimChannel = (await discordClient.channels.fetch(config.discord.channelId)) as TextChannel
@@ -22,8 +23,10 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
   // Docker instance
   const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
 
+  // Get services with lloesche/valheim-server image
   const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
 
+  // Could not find any container
   if (services.length < 1) {
     await valheimChannel.send("Could not find server container!")
     throw new Error("Could not find server container!")
@@ -35,27 +38,48 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
 
   const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
-  discordClient.on("message", async (msg) => {
-    switch (msg.content.toLocaleLowerCase()) {
-      case "!server":
-        await msg.reply(config.server.hostname)
-        break
-      case "!restart":
-        const hasRolePermission = msg.member?.roles.cache.get("500058631002259476")
+  discordClient.on("message", async (message) => {
+    if (message.author.bot) return
+    const program = new Command()
+    program.exitOverride()
+    program
+      .name("")
+      .option("-s --server", "Gets Valheim server hostname")
+      .option("-r --restart", "Restarts Valheim server docker container")
+      .option("-g --get", "Gets current mod info list")
+      .option("-p --ping", "Ping the bot")
+
+    try {
+      const args = message.content.split(" ")
+      const parsed = await program.parseAsync(args, { from: "user" })
+      const options = parsed.opts()
+
+      if (options.get) {
+        await message.reply("WIP")
+      }
+      if (options.server) {
+        await message.reply(config.server.hostname)
+      }
+      if (options.restart) {
+        const hasRolePermission = message.member?.roles.cache.get("500058631002259476")
         if (hasRolePermission) {
-          await msg.reply("ACK, launching a restart")
+          await message.reply("ACK, launching a restart")
           await valheimServerContainer.restart()
         } else {
-          await msg.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
+          await message.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
         }
-        break
-      case "ping":
-        await msg.reply(
+      }
+      if (options.ping) {
+        await message.reply(
           "What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker",
         )
-        break
-      default:
-        break
+      }
+    } catch (error) {
+      if (error instanceof CommanderError && error.code === "commander.helpDisplayed") {
+        return await message.reply(program.helpInformation())
+      }
+      await message.reply(`I crashed :) \n ${error.message}`)
+      logger.error(error)
     }
   })
 

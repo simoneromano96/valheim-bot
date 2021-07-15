@@ -18,13 +18,18 @@ export const config = {
   nexus: {
     apiToken: process.env.APP_NEXUS_API_TOKEN || "",
     enabled: process.env.APP_NEXUS_ENABLED === "true",
-    valheimId: "3667",
+    gameId: "3667",
+    gameDomainName: "valheim",
   },
   db: {
     path: process.env.APP_DB_PATH || "../",
     name: process.env.APP_DB_NAME || "valheim-bot-db-dev",
   },
   static: {
-    path: process.env.APP_STATIC_PATH || "static",
+    publicPath: process.env.APP_STATIC_PUBLIC_PATH || "/static",
+    localPath: process.env.APP_STATIC_LOCAL_PATH || "static",
+  },
+  logger: {
+    prettyPrint: true,
   },
 }

@@ -3,11 +3,11 @@
 ## TODOs
 
 - [x] Add git hook for lint
-- [ ] Add CI
-- [ ] Player Login/Logout (?)
-- [ ] More Logging
+- [ ] Add CI/CD
+- [x] More Logging
 - [ ] Gateway Discord
 - [ ] !get
-- [ ] Refactor Nexus
+- [x] Refactor Nexus
 - [x] Add server domain
 - [ ] Add helmet
+- [ ] Fix security, static server must have different credentials
