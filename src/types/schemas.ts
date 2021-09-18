@@ -53,9 +53,10 @@ export const ModInfo = Type.Object({
   user: User,
   uploaded_by: Type.String(),
   uploaded_users_profile_url: Type.String(),
-  status: Type.Enum(ModStatus),
+  // status: Type.Enum(ModStatus),
+  status: Type.Any(),
   available: Type.Boolean(),
-  picture_url: Type.String(),
+  picture_url: Type.Optional(Type.String()),
   created_timestamp: Type.Number(),
   created_time: Type.String(),
   updated_timestamp: Type.Number(),
@@ -63,11 +64,14 @@ export const ModInfo = Type.Object({
   allow_rating: Type.Boolean(),
   endorsement_count: Type.Number(),
   downloadURL: Type.Optional(Type.String()),
-  endorsement: Type.Object({
-    endorse_status: Type.Enum(EndorsedStatus),
-    timestamp: Type.Number(),
-    version: Type.Number(),
-  }),
+  endorsement: Type.Optional(
+    Type.Object({
+      // endorse_status: Type.Enum(EndorsedStatus),
+      endorse_status: Type.Any(),
+      timestamp: Type.Number(),
+      version: Type.Number(),
+    }),
+  ),
 })
 
 export type IModInfo = Static<typeof ModInfo>

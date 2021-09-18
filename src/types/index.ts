@@ -14,20 +14,11 @@ import {
 // Enum of DB keys
 export enum DBKeys {
   // The observed mod list
-  OBSERVED_MOD_LIST = "OBSERVED_MOD_LIST",
+  ObservedModList = "ObservedModList",
   // The valuated mod list
-  MOD_INFO_LIST = "MOD_LIST",
+  ModInfoList = "ModInfoList",
 }
 
-export {
-  ObserveMod,
-  IObserveMod,
-  ObservedMod,
-  IObservedMod,
-  ObservedModList,
-  IObservedModList,
-  ModInfo,
-  IModInfo,
-  ModInfoList,
-  IModInfoList,
-}
+export type { IObserveMod, IObservedMod, IObservedModList, IModInfo, IModInfoList }
+
+export { ObserveMod, ObservedMod, ObservedModList, ModInfo, ModInfoList }

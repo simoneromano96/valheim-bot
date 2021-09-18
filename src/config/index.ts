@@ -1,9 +1,13 @@
 export const config = {
   discord: {
-    apiToken: process.env.APP_DISCORD_API_TOKEN || "",
-    channelId: process.env.APP_DISCORD_CHANNEL_ID || "",
-    enabled: process.env.APP_DISCORD_ENABLED === "true",
-    restartRolePermissionID: process.env.APP_DISCORD_RESTART_ROLE_PERMISSION_ID || "none",
+    // New version WIP
+    clientId: "830816069366054922",
+    botToken: "ODMwODE2MDY5MzY2MDU0OTIy.YHMLwg.1mbPMIzD3RdKASMMc7Ykz7R0VXQ",
+    guildId: "474131831051124741",
+    channelId: "830821489178705960", // process.env.APP_DISCORD_CHANNEL_ID || "",
+    // apiToken: process.env.APP_DISCORD_API_TOKEN || "",
+    enabled: true, // process.env.APP_DISCORD_ENABLED === "true",
+    restartRolePermissionId: "500058631002259476", // process.env.APP_DISCORD_RESTART_ROLE_PERMISSION_ID || "none",
   },
   server: {
     hostname: process.env.APP_SERVER_HOSTNAME || "localhost",
