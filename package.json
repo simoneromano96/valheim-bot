@@ -25,7 +25,6 @@
   "homepage": "https://github.com/simoneromano96/valheim-bot#readme",
   "type": "module",
   "devDependencies": {
-    "@sinclair/typebox": "^0.20.5",
     "@swc/core": "^1.2.88",
     "@swc/helpers": "^0.2.13",
     "@types/dockerode": "^3.2.7",
@@ -49,6 +48,7 @@
   "dependencies": {
     "@discordjs/rest": "^0.1.0-canary.0",
     "@nexusmods/nexus-api": "^1.1.3",
+    "@sinclair/typebox": "^0.20.5",
     "bullmq": "^1.47.1",
     "discord-api-types": "^0.23.1",
     "discord.js": "^13.1.0",
