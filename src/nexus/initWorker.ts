@@ -5,7 +5,8 @@ import path from "path"
 // External libraries
 import got from "got"
 import pMap from "p-map"
-import nexusApi from "@nexusmods/nexus-api"
+// This is compiled as a cjs module
+import * as nexusApiImport from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 
 import { config } from "../config"
@@ -21,7 +22,7 @@ const nexusConfig = config.nexus
  */
 export async function initWorker(): Promise<void> {
   logger.info("Initializing nexus worker")
-  const nexusClient = await nexusApi.default.create(nexusConfig.apiToken, "Valheim", "0.0.0", nexusConfig.gameId)
+  const nexusClient = await nexusApiImport.default.create(nexusConfig.apiToken, "Valheim", "0.0.0", nexusConfig.gameId)
 
   new QueueScheduler("modsQueue")
   const processModsQueue = new Queue("modsQueue")
@@ -47,7 +48,7 @@ export async function initWorker(): Promise<void> {
     const prevModInfoList = await getModInfoList()
     const updatedModInfoList = await pMap(
       modInfoList,
-      async (modInfo: IModInfo) => {
+      async (modInfo) => {
         // Get saved mod info
         const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
         // Check if timestamps are different. If true = aggiornamento.
@@ -56,7 +57,7 @@ export async function initWorker(): Promise<void> {
           // Get mod Files
           const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
           let maxUploadedTimestamp = 0
-          let latestFileInfo
+          let latestFileInfo: nexusApiImport.IFileInfo
           // Per ogni file della mod controlliamo il timestamp e cerco il piu recente
           for (const fileInfo of modFiles.files) {
             if (fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
@@ -102,7 +103,6 @@ export async function initWorker(): Promise<void> {
     await putModInfoList(updatedModInfoList)
   })
 
-  // fare i comandi per il bot(che siano autocompletabili da discord),
   // fare comando !get per prendere il link dal server e POSTARE tipo NOMEMOD: LINK.
   worker.on("completed", (job) => {
     logger.info(`${job.id} has completed!`)
