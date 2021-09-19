@@ -1,12 +1,12 @@
 // Node
-import fs from "fs"
-import path from "path"
+import { createWriteStream } from "fs"
+import { join, resolve, extname } from "path"
 
 // External libraries
 import got from "got"
 import pMap from "p-map"
 // This is compiled as a cjs module
-import * as nexusApiImport from "@nexusmods/nexus-api"
+import { default as nexusApiImport } from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 
 import { config } from "../config"
@@ -17,12 +17,14 @@ import { logger } from "../logger"
 
 const nexusConfig = config.nexus
 
+const nexusApi = nexusApiImport as unknown as { default: typeof nexusApiImport }
+
 /**
  * Initialize nexus worker
  */
 export async function initWorker(): Promise<void> {
   logger.info("Initializing nexus worker")
-  const nexusClient = await nexusApiImport.default.create(nexusConfig.apiToken, "Valheim", "0.0.0", nexusConfig.gameId)
+  const nexusClient = await nexusApi.default.create(nexusConfig.apiToken, "Valheim", "0.0.0", nexusConfig.gameId)
 
   new QueueScheduler("modsQueue")
   const processModsQueue = new Queue("modsQueue")
@@ -57,7 +59,7 @@ export async function initWorker(): Promise<void> {
           // Get mod Files
           const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
           let maxUploadedTimestamp = 0
-          let latestFileInfo: nexusApiImport.IFileInfo
+          let latestFileInfo
           // Per ogni file della mod controlliamo il timestamp e cerco il piu recente
           for (const fileInfo of modFiles.files) {
             if (fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
@@ -80,17 +82,17 @@ export async function initWorker(): Promise<void> {
           // prendo il primo url (CDN)
           const cdnDownloadURI = downloadURLs[0].URI
           // Get file extension
-          const extension = path.extname(latestFileInfo.file_name)
+          const extension = extname(latestFileInfo.file_name)
           // Compose fileName (still unsure if this is ok)
           const fileName = `${modInfo.game_id}-${modInfo.mod_id}${extension}`
           // local file path
-          const localFilePath = path.join(path.resolve(config.static.localPath), fileName)
+          const localFilePath = join(resolve(config.static.localPath), fileName)
           // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
-          await pipeline(got.stream(cdnDownloadURI), fs.createWriteStream(localFilePath))
+          await pipeline(got.stream(cdnDownloadURI), createWriteStream(localFilePath))
           // Create download URL
           const url = new URL(`${config.server.protocol}://${config.server.hostname}`)
           url.port = config.server.port
-          url.pathname = path.join(config.static.publicPath, fileName)
+          url.pathname = join(config.static.publicPath, fileName)
           const downloadURL = url.toString()
           // Reassign modInfo with the downloadURL
           return { ...modInfo, downloadURL }

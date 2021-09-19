@@ -3,7 +3,7 @@ import Docker from "dockerode"
 import { Client as DiscordClient, TextChannel, Intents, GuildMemberRoleManager, ApplicationCommandData } from "discord.js"
 
 import { REST } from "@discordjs/rest"
-import { ApplicationCommandOptionType, Routes } from "discord-api-types/v9"
+import { Routes } from "discord-api-types/v9"
 
 import { config } from "../config"
 import { logger } from "../logger"
