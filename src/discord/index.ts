@@ -8,7 +8,8 @@ import { Routes } from "discord-api-types/v9"
 import { config } from "../config"
 import { logger } from "../logger"
 import { getModInfoList, getObservedModList } from "../db"
-import { observeMod } from "../nexus/api"
+import { observeMod, stopObserveMod } from "../nexus/api"
+import pMap from "p-map"
 
 const discordAPI = new REST({ version: "9" }).setToken(config.discord.botToken)
 
@@ -30,6 +31,18 @@ const commands: ApplicationCommandData[] = [
   {
     name: "observe",
     description: "Add a mod to observed list",
+    options: [
+      {
+        name: "id",
+        description: "The nexus mod id",
+        required: true,
+        type: 4,
+      },
+    ],
+  },
+  {
+    name: "stop_observe",
+    description: "Removes a mod from observed list",
     options: [
       {
         name: "id",
@@ -95,62 +108,79 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
   discordClient.on("interactionCreate", async (interaction) => {
     if (!interaction.isCommand()) return
 
-    switch (interaction.commandName) {
-      case "ping": {
-        await interaction.reply(
-          "What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker",
-        )
-        break
-      }
-      case "server": {
-        await interaction.reply(config.server.hostname)
-        break
-      }
-      case "get_observed": {
-        const currentModList = await getObservedModList()
-        await interaction.reply(JSON.stringify(currentModList))
-        break
-      }
-      case "get_info": {
-        const currentModList = await getModInfoList()
-        await interaction.reply(JSON.stringify(currentModList.map(({ name, summary, downloadURL }) => ({ name, summary, downloadURL }))))
-        break
-      }
-      case "observe": {
-        const id = interaction.options.getInteger("id", true)
-        const currentModList = await observeMod(id)
-        await interaction.reply(JSON.stringify(currentModList))
-        break
-      }
-      case "restart": {
-        try {
-          if (interaction.member?.roles instanceof GuildMemberRoleManager) {
-            const role = interaction.member.roles.resolve(config.discord.restartRolePermissionId)
-            if (!role) {
-              throw new ForbiddenCommandError("No role")
-            }
-          } else if (Array.isArray(interaction.member?.roles)) {
-            const role = interaction.member?.roles.find((role) => role === config.discord.restartRolePermissionId)
-            if (!role) {
-              throw new ForbiddenCommandError("No role")
-            }
-          } else {
-            throw new ForbiddenCommandError("No roles")
-          }
-          await interaction.reply("ACK, launching a restart")
-          // await valheimServerContainer.restart()
-        } catch (error) {
-          if (error instanceof ForbiddenCommandError) {
-            await interaction.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
-          } else {
-            logger.error(error as Error)
-            await interaction.reply("Qualquadra non cosa, scrivi a GESU")
-          }
+    try {
+      switch (interaction.commandName) {
+        case "ping": {
+          await interaction.reply("What did you expect? `Pong` maybe? Are you gonna *shit* yourself now? Maybe *piss and cry*? **BeepBoop** motherfucker")
+          break
         }
-        break
+        case "server": {
+          await interaction.reply(config.server.hostname)
+          break
+        }
+        case "get_observed": {
+          const currentModList = await getObservedModList()
+          await interaction.reply(JSON.stringify(currentModList))
+          break
+        }
+        case "get_info": {
+          const currentModList = await getModInfoList()
+          await interaction.reply("Posting list into channel!")
+          await pMap(
+            currentModList,
+            async ({ name, downloadURL }) => {
+              await valheimChannel.send(`* **${name}**: ${downloadURL}`)
+            },
+            { concurrency: 5 },
+          )
+          break
+        }
+        case "observe": {
+          const id = interaction.options.getInteger("id", true)
+          const currentModList = await observeMod(id)
+          await interaction.reply(JSON.stringify(currentModList))
+          break
+        }
+        case "stop_observe": {
+          const id = interaction.options.getInteger("id", true)
+          const currentModList = await stopObserveMod(id)
+          await interaction.reply(JSON.stringify(currentModList))
+          break
+        }
+        case "restart": {
+          try {
+            if (interaction.member?.roles instanceof GuildMemberRoleManager) {
+              const role = interaction.member.roles.resolve(config.discord.restartRolePermissionId)
+              if (!role) {
+                throw new ForbiddenCommandError("No role")
+              }
+            } else if (Array.isArray(interaction.member?.roles)) {
+              const role = interaction.member?.roles.find((role) => role === config.discord.restartRolePermissionId)
+              if (!role) {
+                throw new ForbiddenCommandError("No role")
+              }
+            } else {
+              throw new ForbiddenCommandError("No roles")
+            }
+            await interaction.reply("ACK, launching a restart")
+            // await valheimServerContainer.restart()
+          } catch (error) {
+            if (error instanceof ForbiddenCommandError) {
+              await interaction.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
+            } else {
+              logger.error(error as Error)
+              await interaction.reply("Qualquadra non cosa, scrivi a GESU")
+            }
+          }
+          break
+        }
+        default:
+          logger.error(`Interaction ${interaction.commandName} does not have any implementation`)
+          await interaction.reply("È colpa di GESU! Prenditela con lui!")
+          break
       }
-      default:
-        break
+    } catch (error) {
+      logger.error(error)
     }
   })
 

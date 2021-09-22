@@ -37,6 +37,8 @@ const main = async () => {
   // Fastify HTTP Server
   const app = fastify({
     logger: { ...config.logger },
+    // 10 seconds for redis
+    pluginTimeout: 10_000,
   })
 
   app.register(fastifyAuth)

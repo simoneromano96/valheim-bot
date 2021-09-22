@@ -6,7 +6,7 @@ import { join, resolve, extname } from "path"
 import got from "got"
 import pMap from "p-map"
 // This is compiled as a cjs module
-import { default as nexusApiImport } from "@nexusmods/nexus-api"
+import { default as nexusApiImport, IFileInfo, IModFiles } from "@nexusmods/nexus-api"
 import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 
 import { config } from "../config"
@@ -18,6 +18,23 @@ import { logger } from "../logger"
 const nexusConfig = config.nexus
 
 const nexusApi = nexusApiImport as unknown as { default: typeof nexusApiImport }
+
+const getLatestFileInfo = (modFiles: IModFiles): IFileInfo => {
+  let maxUploadedTimestamp = 0
+  let latestFileInfo: IFileInfo
+  // Per ogni file della mod controlliamo il timestamp e cerco il piu recente
+  for (const fileInfo of modFiles.files) {
+    if (fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
+      maxUploadedTimestamp = fileInfo.uploaded_timestamp
+      latestFileInfo = fileInfo
+    }
+  }
+  // se non c'è interrompiamo il flusso (errore)
+  if (!latestFileInfo) {
+    throw new Error("No File present here :c")
+  }
+  return latestFileInfo
+}
 
 /**
  * Initialize nexus worker
@@ -51,53 +68,46 @@ export async function initWorker(): Promise<void> {
     const updatedModInfoList = await pMap(
       modInfoList,
       async (modInfo) => {
-        // Get saved mod info
-        const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
-        // Check if timestamps are different. If true = aggiornamento.
-        if (modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
-          logger.info(`The ${modInfo.name ?? modInfo.mod_id} mod has been updated!`)
-          // Get mod Files
-          const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
-          let maxUploadedTimestamp = 0
-          let latestFileInfo
-          // Per ogni file della mod controlliamo il timestamp e cerco il piu recente
-          for (const fileInfo of modFiles.files) {
-            if (fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
-              maxUploadedTimestamp = fileInfo.uploaded_timestamp
-              latestFileInfo = fileInfo
-            }
+        try {
+          // Get saved mod info
+          const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
+          // Check if timestamps are different. If true = aggiornamento.
+          if (true || modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
+            logger.info(`The ${modInfo.name ?? modInfo.mod_id} mod has been updated!`)
+            // Get mod Files
+            const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
+            const latestFileInfo = getLatestFileInfo(modFiles)
+            // prendiamo i link per scaricare
+            const downloadURLs = await nexusClient.getDownloadURLs(
+              modInfo.mod_id,
+              latestFileInfo.file_id,
+              undefined,
+              undefined,
+              modInfo.domain_name,
+            )
+            // prendo il primo url (CDN)
+            const cdnDownloadURI = downloadURLs[0].URI
+            // Get file extension
+            const extension = extname(latestFileInfo.file_name)
+            // Compose fileName (still unsure if this is ok)
+            const fileName = `${modInfo.game_id}-${modInfo.mod_id}${extension}`
+            // local file path
+            const localFilePath = join(resolve(config.static.localPath), fileName)
+            // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
+            await pipeline(got.stream(cdnDownloadURI), createWriteStream(localFilePath))
+            // Create download URL
+            const url = new URL(`${config.server.protocol}://${config.server.hostname}`)
+            url.port = config.server.port
+            url.pathname = join(config.static.publicPath, fileName)
+            const downloadURL = url.toString()
+            // Add downloadURL to modInfo
+            return { ...modInfo, downloadURL }
           }
-          // se non c'è interrompiamo il flusso (errore)
-          if (!latestFileInfo) {
-            throw new Error("No File present here :c")
-          }
-          // prendiamo i link per scaricare
-          const downloadURLs = await nexusClient.getDownloadURLs(
-            modInfo.mod_id,
-            latestFileInfo.file_id,
-            undefined,
-            undefined,
-            modInfo.domain_name,
-          )
-          // prendo il primo url (CDN)
-          const cdnDownloadURI = downloadURLs[0].URI
-          // Get file extension
-          const extension = extname(latestFileInfo.file_name)
-          // Compose fileName (still unsure if this is ok)
-          const fileName = `${modInfo.game_id}-${modInfo.mod_id}${extension}`
-          // local file path
-          const localFilePath = join(resolve(config.static.localPath), fileName)
-          // è un flusso di dati la cui fonte è il download URI, la destinazione è il nostro file system :)
-          await pipeline(got.stream(cdnDownloadURI), createWriteStream(localFilePath))
-          // Create download URL
-          const url = new URL(`${config.server.protocol}://${config.server.hostname}`)
-          url.port = config.server.port
-          url.pathname = join(config.static.publicPath, fileName)
-          const downloadURL = url.toString()
-          // Reassign modInfo with the downloadURL
-          return { ...modInfo, downloadURL }
+          return prevModInfo
+        } catch (error) {
+          logger.error(error)
+          return modInfo
         }
-        return modInfo
       },
       { concurrency: 10 },
     )
