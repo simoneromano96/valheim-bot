@@ -13,7 +13,7 @@ export const pipeline = streamPromises.pipeline
 /**
  * Initializes all APIs for nexus
  */
-export const initNexusAPI: FastifyPluginCallback = async (app, options, done) => {
+export const initNexusAPI: FastifyPluginCallback = async (app) => {
   await initWorker()
 
   const observeModSchema = {
@@ -103,6 +103,4 @@ export const initNexusAPI: FastifyPluginCallback = async (app, options, done) =>
     const filteredMods = await stopObserveMod(modId)
     res.send(filteredMods)
   })
-
-  done()
 }

@@ -24,15 +24,21 @@ const validate = async (username: string, password: string, req: FastifyRequest,
 
 const main = async () => {
   logger.info("Initializing Valheim Bot")
+
+  const localPath = resolve(config.static.localPath)
+  logger.info("Local public path: " + resolve(localPath))
+
   try {
-    await fsPromises.access(resolve(config.static.publicPath), fsConstants.W_OK)
+    await fsPromises.access(resolve(localPath), fsConstants.W_OK)
   } catch (error) {
-    await fsPromises.mkdir(resolve(config.static.publicPath))
+    await fsPromises.mkdir(resolve(localPath))
   }
 
   // Fastify HTTP Server
   const app = fastify({
     logger: { ...config.logger },
+    // 10 seconds for redis
+    pluginTimeout: 10_000,
   })
 
   app.register(fastifyAuth)
@@ -49,7 +55,7 @@ const main = async () => {
     exposeRoute: true,
   })
   app.register(fastifyStatic, {
-    root: resolve(config.static.localPath),
+    root: localPath,
     prefix: config.static.publicPath, // optional: default '/'
   })
 

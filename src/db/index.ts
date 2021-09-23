@@ -1,24 +1,24 @@
 import level from "level"
-import { join } from "path"
+import { join, resolve } from "path"
 import { config } from "../config"
 
 import { DBKeys, IModInfo, IModInfoList, IObservedMod, IObservedModList } from "../types"
 
 // valueEncoding json serve a specificare il nostro encoding nel database,  specifichiamo il formato insomma
-export const valheimBotDB = level(join(__dirname, config.db.path, config.db.name), { valueEncoding: "json" })
+export const valheimBotDB = level(resolve(join(config.db.path, config.db.name)), { valueEncoding: "json" })
 
 ///* Initialization
 export const initLevelDB = async (): Promise<void> => {
   try {
-    await valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)
+    await valheimBotDB.get(DBKeys.ObservedModList)
   } catch (error) {
-    await valheimBotDB.put(DBKeys.OBSERVED_MOD_LIST, [])
+    await valheimBotDB.put(DBKeys.ObservedModList, [])
   }
 
   try {
-    await valheimBotDB.get(DBKeys.MOD_INFO_LIST)
+    await valheimBotDB.get(DBKeys.ModInfoList)
   } catch (error) {
-    await valheimBotDB.put(DBKeys.MOD_INFO_LIST, [])
+    await valheimBotDB.put(DBKeys.ModInfoList, [])
   }
 }
 
@@ -28,7 +28,7 @@ export const initLevelDB = async (): Promise<void> => {
  * @param observedModList The new observed mod list to save
  */
 export const putObservedModList = (observedModList: IObservedModList): Promise<void> => {
-  return valheimBotDB.put(DBKeys.OBSERVED_MOD_LIST, observedModList)
+  return valheimBotDB.put(DBKeys.ObservedModList, observedModList)
 }
 
 /**
@@ -36,7 +36,7 @@ export const putObservedModList = (observedModList: IObservedModList): Promise<v
  * @returns The current observed mod list
  */
 export const getObservedModList = (): Promise<IObservedModList> => {
-  return valheimBotDB.get(DBKeys.OBSERVED_MOD_LIST)
+  return valheimBotDB.get(DBKeys.ObservedModList)
 }
 
 /**
@@ -54,7 +54,7 @@ export const getObservedModById = async (modId: number): Promise<IObservedMod | 
  * @returns The current mod info list
  */
 export const getModInfoList = (): Promise<IModInfoList> => {
-  return valheimBotDB.get(DBKeys.MOD_INFO_LIST)
+  return valheimBotDB.get(DBKeys.ModInfoList)
 }
 
 /**
@@ -72,5 +72,5 @@ export const getModInfoById = async (modId: number): Promise<IModInfo | undefine
  * @param modInfoList The new mod info list to save
  */
 export const putModInfoList = (modInfoList: IModInfoList): Promise<void> => {
-  return valheimBotDB.put(DBKeys.MOD_INFO_LIST, modInfoList)
+  return valheimBotDB.put(DBKeys.ModInfoList, modInfoList)
 }
