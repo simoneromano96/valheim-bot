@@ -87,23 +87,23 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
 
   await valheimChannel.send("Beep Boop, bot v2 is up and running!")
 
-  // // Docker instance
-  // const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
+  // Docker instance
+  const dockerClient = new Docker({ socketPath: "/var/run/docker.sock" })
 
-  // // Get services with lloesche/valheim-server image
-  // const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
+  // Get services with lloesche/valheim-server image
+  const services = await dockerClient.listContainers({ filters: { ancestor: ["lloesche/valheim-server"] } })
 
-  // // Could not find any container
-  // if (services.length < 1) {
-  //   await valheimChannel.send("Could not find server container!")
-  //   throw new Error("Could not find server container!")
-  // }
+  // Could not find any container
+  if (services.length < 1) {
+    await valheimChannel.send("Could not find server container!")
+    throw new Error("Could not find server container!")
+  }
 
-  // await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
+  await valheimChannel.send(`Bibop, found ${services.length} valheim servers`)
 
-  // const valheimServerContainerId = services[0]?.Id
+  const valheimServerContainerId = services[0]?.Id
 
-  // const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
+  const valheimServerContainer = dockerClient.getContainer(valheimServerContainerId)
 
   discordClient.on("interactionCreate", async (interaction) => {
     if (!interaction.isCommand()) return
@@ -129,7 +129,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
           await pMap(
             currentModList,
             async ({ name, downloadURL }) => {
-              await valheimChannel.send(`* **${name}**: ${downloadURL}`)
+              await valheimChannel.send(`**${name}**: ${downloadURL}`)
             },
             { concurrency: 5 },
           )
@@ -163,7 +163,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
               throw new ForbiddenCommandError("No roles")
             }
             await interaction.reply("ACK, launching a restart")
-            // await valheimServerContainer.restart()
+            await valheimServerContainer.restart()
           } catch (error) {
             if (error instanceof ForbiddenCommandError) {
               await interaction.reply("Your *pp* is too *small*! And I've seen many since I am a bot in the interwebs")
