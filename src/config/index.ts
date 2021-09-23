@@ -35,4 +35,7 @@ export const config = {
   logger: {
     prettyPrint: true,
   },
+  redis: {
+    hostname: process.env.APP_REDIS_HOST || "localhost",
+  },
 }

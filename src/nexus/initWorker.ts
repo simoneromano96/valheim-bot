@@ -43,7 +43,7 @@ export async function initWorker(): Promise<void> {
   logger.info("Initializing nexus worker")
   const nexusClient = await nexusApi.default.create(nexusConfig.apiToken, "Valheim", "0.0.0", nexusConfig.gameId)
 
-  new QueueScheduler("modsQueue")
+  new QueueScheduler("modsQueue", { connection: { host: config.redis.hostname } })
   const processModsQueue = new Queue("modsQueue")
 
   await processModsQueue.add("evaluateModListJob", null, {
