@@ -1,6 +1,6 @@
 {
   "name": "valheim-bot",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A simple valheim bot test",
   "main": "./src/index.js",
   "scripts": {
