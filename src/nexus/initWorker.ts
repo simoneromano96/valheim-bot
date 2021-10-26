@@ -11,7 +11,6 @@ import { Job, Queue, QueueScheduler, Worker } from "bullmq"
 
 import { config } from "../config"
 import { getModInfoList, getObservedModList, putModInfoList } from "../db"
-import { IModInfo } from "../types"
 import { pipeline } from "./index"
 import { logger } from "../logger"
 
@@ -24,7 +23,7 @@ const getLatestFileInfo = (modFiles: IModFiles): IFileInfo => {
   let latestFileInfo: IFileInfo
   // Per ogni file della mod controlliamo il timestamp e cerco il piu recente
   for (const fileInfo of modFiles.files) {
-    if (fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
+    if (fileInfo.is_primary && fileInfo.uploaded_timestamp > maxUploadedTimestamp) {
       maxUploadedTimestamp = fileInfo.uploaded_timestamp
       latestFileInfo = fileInfo
     }
@@ -47,11 +46,17 @@ export async function initWorker(): Promise<void> {
   const processModsQueue = new Queue("modsQueue", { connection: { host: config.redis.hostname } })
 
   await processModsQueue.add("evaluateModListJob", null, {
+    // On repeat, start job immediately
     delay: 0,
     repeat: {
-      // 1000ms -> 60s -> 60m -> 1h
+      // Start job every 1000ms -> 60s -> 60m -> 1h
       every: 1000 * 60 * 60 * 1,
     },
+  })
+
+  await processModsQueue.add("evaluateModListJob", null, {
+    // Start job after 1000ms -> 1s
+    delay: 1000,
   })
 
   //QUESTO È IL JOB LOL
@@ -74,7 +79,7 @@ export async function initWorker(): Promise<void> {
             // Get saved mod info
             const prevModInfo = prevModInfoList.find((mod) => mod.mod_id === modInfo.mod_id)
             // Check if timestamps are different. If true = aggiornamento.
-            if (true || modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
+            if (modInfo.updated_timestamp !== prevModInfo?.updated_timestamp) {
               logger.info(`The ${modInfo.name ?? modInfo.mod_id} mod has been updated!`)
               // Get mod Files
               const modFiles = await nexusClient.getModFiles(modInfo.mod_id, modInfo.domain_name)
@@ -93,7 +98,9 @@ export async function initWorker(): Promise<void> {
               await pipeline(got.stream(cdnDownloadURI), createWriteStream(localFilePath))
               // Create download URL
               const url = new URL(`${config.server.protocol}://${config.server.hostname}`)
-              url.port = config.server.port
+              if (process.env.NODE_ENV !== "production") {
+                url.port = config.server.port
+              }
               url.pathname = join(config.static.publicPath, fileName)
               const downloadURL = url.toString()
               // Add downloadURL to modInfo

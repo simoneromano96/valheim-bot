@@ -4,12 +4,12 @@ import { Client as DiscordClient, TextChannel, Intents, GuildMemberRoleManager, 
 
 import { REST } from "@discordjs/rest"
 import { Routes } from "discord-api-types/v9"
+import pMap from "p-map"
 
 import { config } from "../config"
 import { logger } from "../logger"
 import { getModInfoList, getObservedModList } from "../db"
 import { observeMod, stopObserveMod } from "../nexus/api"
-import pMap from "p-map"
 
 const discordAPI = new REST({ version: "9" }).setToken(config.discord.botToken)
 
@@ -115,7 +115,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
           break
         }
         case "server": {
-          await interaction.reply(config.server.hostname)
+          await interaction.reply(config.gameServer.hostname)
           break
         }
         case "get_observed": {
@@ -131,7 +131,7 @@ export const initDiscordAPI: FastifyPluginCallback = async (app, _options, done)
             async ({ name, downloadURL }) => {
               await valheimChannel.send(`**${name}**: ${downloadURL}`)
             },
-            { concurrency: 5 },
+            { concurrency: 10 },
           )
           break
         }

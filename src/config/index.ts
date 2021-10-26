@@ -13,6 +13,9 @@ export const config = {
     protocol: process.env.APP_SERVER_PROTOCOL || "http",
     port: process.env.APP_SERVER_PORT || "8080",
   },
+  gameServer: {
+    hostname: process.env.APP_GAME_SERVER_HOSTNAME || "localhost",
+  },
   basicAuth: {
     username: process.env.APP_BASIC_AUTH_USERNAME || "username",
     password: process.env.APP_BASIC_AUTH_PASSWORD || "password",
